@@ -1,0 +1,99 @@
+scn RHudScanScript
+
+float fPrimary	; threshold for primary needs values
+float fHealth	; threshold for health values
+float fArmor	; threshold for armor values
+
+ref rHelmet
+ref rArmor
+float fCondition
+
+
+Begin GameMode
+	set fPrimary to RHudHTSThreshold * (1 - RHudHTSPercentage/100)
+	set fHealth  to 100 - RHudLimbPercentage
+	set fArmor   to 100 - RHudArmorPercentage
+
+	;; Primary Needs Hud
+	if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
+		set iHUD.pnhPrimaryOn to 1
+		set iHUDFade.secondsToFadePNHPrimary to iHUDSettings.fadeSeconds
+	endif
+
+
+	;; Rads
+	if (player.GetAV RadiationRads >= fPrimary)
+		set iHUD.pnhRadsOn to 1
+		set iHUDFade.secondsToFadePNHRads to iHUDSettings.fadeSeconds
+	endif
+
+
+	;; Project Nevada's HUD - activates with vision mode usage or grenade selection
+	if (PNxCVisionModeMain.state >= 10) || PNxCGrenadeHotkeyMain.selectTrap || PNxCGrenadeHotkeyMain.quickselectTrap
+		set iHUD.pnOn to 1
+		set iHUDFade.secondsToFadePN to iHUDSettings.fadeSeconds
+	endif
+
+
+	;; Hud Extended's Health and Armor Hud
+	;;
+	;; 1. Check all of the health values
+	if (player.GetAV perceptioncondition <= fHealth) || (player.GetAV leftattackcondition <= fHealth) || (player.GetAV endurancecondition <= fHealth) || (player.GetAV rightattackcondition <= fHealth) || (player.GetAV leftmobilitycondition <= fHealth) || (player.GetAV rightmobilitycondition <= fHealth)
+		set HUDEShowHealth to 1
+	else
+		;; All armor and helmet values taken as-is from Imp's HUDEQuestScript
+
+		;; 2. Check the armor
+		set rArmor to player.getequippedobject 2
+		if rArmor
+			set fCondition to player.getequippedcurrenthealth 2
+			set fCondition to fCondition / (gethealth rArmor) * 100
+		else
+			set fCondition to -1
+		endif
+
+
+		if (fCondition <= fArmor) 	; show if no armor => (fCondition == -1)
+			set HUDEShowHealth to 1
+		else
+			;; 3. Check the helmet
+			set rHelmet to player.getequippedobject 0							; head
+			if rHelmet
+				set fCondition to player.getequippedcurrenthealth 0
+				set fCondition to fCondition / (gethealth rHelmet) * 100
+			else
+				set rHelmet to player.getequippedobject 9						; headband
+				if rHelmet
+					set fCondition to player.getequippedcurrenthealth 9
+					set fCondition to fCondition / (gethealth rHelmet) * 100
+				else
+					set rHelmet to player.getequippedobject 10					; hat
+					if rHelmet
+						set fCondition to player.getequippedcurrenthealth 10
+						set fCondition to fCondition / (gethealth rHelmet) * 100
+					else
+						set rHelmet to player.getequippedobject 11				; eyeglasses
+						if rHelmet
+							set fCondition to player.getequippedcurrenthealth 11
+							set fCondition to fCondition / (gethealth rHelmet) * 100
+						else
+							set rHelmet to player.getequippedobject 14			; mask
+							if rHelmet
+								set fCondition to player.getequippedcurrenthealth 14
+								set fCondition to fCondition / (gethealth rHelmet) * 100
+							else
+								set fCondition to -1
+							endif
+						endif
+					endif
+				endif
+			endif
+
+			if (fCondition <= fArmor) 	; show if no helmet => (fCondition == -1)
+				set HUDEShowHealth to 1
+			else
+				set HUDEShowHealth to 0
+			endif
+		endif
+	endif
+End
