@@ -12,6 +12,9 @@ Supported HUD mods
    Primary Needs and Rads meters show only when close to their
    thresholds.
 
+   Weapon Condition and Ammo show only when weapon health is
+   below a threshold or the weapon isn't fully loaded.
+
 *  Project Nevada
 
    Energy Cell usage and Grenade quick select show only if an 
