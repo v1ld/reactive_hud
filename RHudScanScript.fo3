@@ -11,7 +11,9 @@ ref rArmor
 float fCondition
 
 ref rWeapon
+ref rBinoculars
 short sWeaponType
+short sWeaponNeedsLoading
 
 
 Begin GameMode
@@ -42,8 +44,8 @@ Begin GameMode
 
 
 	;; Weapon ammo and health
-	set rWeapon to Player.GetEquippedObject 5
-	if rWeapon
+	set rWeapon to player.GetEquippedObject 5
+	if rWeapon && (player.IsWeaponInList RepairBinoculars == 0) ; The Binoculars are One-handed Pistols(!), so weed them out
 		set sWeaponType to player.GetWeaponType rWeapon
 		;; Check current clip load for weapons that have clips and weapon health for all weapons
 		if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
