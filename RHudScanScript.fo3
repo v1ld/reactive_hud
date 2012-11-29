@@ -1,18 +1,24 @@
 scn RHudScanScript
 
-float fPrimary	; threshold for primary needs values
-float fHealth	; threshold for health values
-float fArmor	; threshold for armor values
+;; Thresholds
+float fPrimary	; primary needs values
+float fHealth	; limb health
+float fArmor	; armor health
+float fWeapon	; weapon health
 
 ref rHelmet
 ref rArmor
 float fCondition
+
+ref rWeapon
+short sWeaponType
 
 
 Begin GameMode
 	set fPrimary to RHudHTSThreshold * (1 - RHudHTSPercentage/100)
 	set fHealth  to 100 - RHudLimbPercentage
 	set fArmor   to 100 - RHudArmorPercentage
+	set fWeapon  to 100 - RHudWeaponPercentage
 
 	;; Primary Needs Hud
 	if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
@@ -34,6 +40,18 @@ Begin GameMode
 		set iHUDFade.secondsToFadePN to iHUDSettings.fadeSeconds
 	endif
 
+
+	;; Weapon ammo and health
+	set rWeapon to Player.GetEquippedObject 5
+	if rWeapon
+		set sWeaponType to player.GetWeaponType rWeapon
+		;; Check current clip load for weapons that have clips and weapon health for all weapons
+		if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
+				set iHUD.hudCNDOn to 1
+				set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSecondsOnCND
+			endif
+		endif
+	endif
 
 	;; Hud Extended's Health and Armor Hud
 	;;
