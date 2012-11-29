@@ -49,9 +49,12 @@ Configuration
 -------------
 
 These globals adjust some of the behavior.
-*  RHudLimbPercentage (15%): show if any limb < 85% healthy.
-*  RHudArmorPercentage (25%): show if armor/helmet < 75% condition.
-*  RHudHTSPercentage (10%): show if any of hunger, sleep, thirst, or
+*  RHudLimbPercentage (85%): show if any limb < 85% healthy.
+*  RHudArmorPercentage (50%): show if armor/helmet < 50% condition.
+   (Armor protection degrades below 50%.)
+*  RHudWeaponPercentage (75%): show if armor/helmet < 75% condition.
+   (Weapon damage degrades below 75%.)
+*  RHudHTSPercentage (90%): show if any of hunger, sleep, thirst, or
    rads taken > 90% of first threshold (RHudHTSThreshold).
 *  RHudHTSThreshold (400): first threshold for HTS values.  The default
    of 400 is from the jsawyer mod.  Vanilla uses 200.

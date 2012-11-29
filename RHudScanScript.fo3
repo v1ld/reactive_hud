@@ -17,10 +17,10 @@ short sWeaponNeedsLoading
 
 
 Begin GameMode
-	set fPrimary to RHudHTSThreshold * (1 - RHudHTSPercentage/100)
-	set fHealth  to 100 - RHudLimbPercentage
-	set fArmor   to 100 - RHudArmorPercentage
-	set fWeapon  to 100 - RHudWeaponPercentage
+	set fPrimary to RHudHTSThreshold * RHudHTSPercentage/100
+	set fHealth  to RHudLimbPercentage
+	set fArmor   to RHudArmorPercentage
+	set fWeapon  to RHudWeaponPercentage
 
 	;; Primary Needs Hud
 	if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
