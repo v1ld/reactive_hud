@@ -9,8 +9,8 @@ Supported HUD mods
 
 *  oHud
 
-   Primary Needs and Rads meters show only when close to their
-   thresholds.
+   Encumbrance, Primary Needs and Rads meters show only when close
+   to their thresholds.
 
    Weapon Condition and Ammo show only when weapon health is
    below a threshold or the weapon isn't fully loaded.
@@ -57,6 +57,7 @@ These globals adjust some of the behavior.
    (Armor protection degrades below 50%.)
 *  RHudWeaponPercentage (75%): show if armor/helmet < 75% condition.
    (Weapon damage degrades below 75%.)
+*  RHudWeightPercentage (90%): show if encumbrance > 90% of capacity.
 *  RHudHTSPercentage (90%): show if any of hunger, sleep, thirst, or
    rads taken > 90% of first threshold (RHudHTSThreshold).
 *  RHudHTSThreshold (400): first threshold for HTS values.  The default

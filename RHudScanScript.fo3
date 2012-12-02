@@ -5,6 +5,7 @@ float fPrimary	; primary needs values
 float fHealth	; limb health
 float fArmor	; armor health
 float fWeapon	; weapon health
+float fWeight	; inventory weight
 
 ref rHelmet
 ref rArmor
@@ -21,6 +22,7 @@ Begin GameMode
 	set fHealth  to RHudLimbPercentage
 	set fArmor   to RHudArmorPercentage
 	set fWeapon  to RHudWeaponPercentage
+	set fWeight  to RHudWeightPercentage
 
 	;; Primary Needs Hud
 	if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
@@ -33,6 +35,13 @@ Begin GameMode
 	if (player.GetAV RadiationRads >= fPrimary)
 		set iHUD.pnhRadsOn to 1
 		set iHUDFade.secondsToFadePNHRads to iHUDSettings.fadeSeconds
+	endif
+
+
+	;; Inventory weight
+	if ((player.GetAV InventoryWeight)/(player.GetAV CarryWeight)*100 >= fWeight)
+		set iHUD.pnhEncumbOn to 1
+		set iHUDFade.secondsToFadePNHEncumb to iHUDSettings.fadeSeconds
 	endif
 
 
@@ -50,7 +59,7 @@ Begin GameMode
 		;; Check current clip load for weapons that have clips and weapon health for all weapons
 		if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
 				set iHUD.hudCNDOn to 1
-				set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSecondsOnCND
+				set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSeconds
 			endif
 		endif
 	endif
