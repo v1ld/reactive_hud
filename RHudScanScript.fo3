@@ -1,128 +1,123 @@
 scn RHudScanScript
 
 ;; Thresholds
-float fPrimary	; primary needs values
-float fHealth	; limb health
-float fArmor	; armor health
-float fWeapon	; weapon health
-float fWeight	; inventory weight
-
-ref rHelmet
-ref rArmor
-float fCondition
+float fPrimary  ; primary needs values
+float fHealth   ; limb health
+float fArmor    ; armor health
+float fWeapon   ; weapon health
+float fWeight   ; inventory weight
 
 ref rWeapon
-ref rBinoculars
 short sWeaponType
 short sWeaponNeedsLoading
 
+short iIndex
+ref rHUDEShowHealth
+ref rPNxCVisionModeMain
+ref rPNxCGrenadeHotkeyMain
+
+ref rEquip
+float fEquipState
+array_var aHUDECheckList
+array_var aWearable
+short sHUDLastIndex
+short sShowHUDE
+
 
 Begin GameMode
-	set fPrimary to RHudHTSThreshold * RHudHTSPercentage/100
-	set fHealth  to RHudLimbPercentage
-	set fArmor   to RHudArmorPercentage
-	set fWeapon  to RHudWeaponPercentage
-	set fWeight  to RHudWeightPercentage
 
-	;; Primary Needs Hud
-	if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
-		set iHUD.pnhPrimaryOn to 1
-		set iHUDFade.secondsToFadePNHPrimary to iHUDSettings.fadeSeconds
-	endif
+  if GetGameRestarted
+    set iIndex to GetModIndex "HUD Extended.esp"
+    if iIndex < 255
+      set rHUDEShowHealth to BuildRef iIndex ?????
+      ;; All armor and helmet values taken as-is from Imp's HUDEQuestScript
+      let aHUDECheckList := ar_list 2, 0, 10, 11, 9, 14  ; armor, head, hat, eyeglasses, headband, mask
+      let sHUDLastIndex := (ar_size aHUDECheckList) - 1
+    else
+      set rHUDEShowHealth to 0
+    endif
 
+    set iIndex to GetModIndex ""
+    if iIndex < 255
+      set rPNxCVisionModeMain to BuildRef iIndex ?????
+    else
+      set rPNxCVisionModeMain to 0
+    endif
 
-	;; Rads
-	if (player.GetAV RadiationRads >= fPrimary)
-		set iHUD.pnhRadsOn to 1
-		set iHUDFade.secondsToFadePNHRads to iHUDSettings.fadeSeconds
-	endif
+    set iIndex to GetModIndex ""
+    if iIndex < 255
+      set rPNxCGrenadeHotkeyMain to BuildRef iIndex ?????
+    else
+      set rPNxCGrenadeHotkeyMain to 0
+    endif
 
+    set fPrimary to RHudHTSThreshold * RHudHTSPercentage/100
+    set fHealth  to RHudLimbPercentage
+    set fArmor   to RHudArmorPercentage
+    set fWeapon  to RHudWeaponPercentage
+    set fWeight  to RHudWeightPercentage
+  endif
 
-	;; Inventory weight
-	if ((player.GetAV InventoryWeight)/(player.GetAV CarryWeight)*100 >= fWeight)
-		set iHUD.pnhEncumbOn to 1
-		set iHUDFade.secondsToFadePNHEncumb to iHUDSettings.fadeSeconds
-	endif
+  ;; Primary Needs Hud
+  if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
+    set iHUD.pnhPrimaryOn to 1
+    set iHUDFade.secondsToFadePNHPrimary to iHUDSettings.fadeSeconds
+  endif
 
+  ;; Rads
+  if (player.GetAV RadiationRads >= fPrimary)
+    set iHUD.pnhRadsOn to 1
+    set iHUDFade.secondsToFadePNHRads to iHUDSettings.fadeSeconds
+  endif
 
-	;; Project Nevada's HUD - activates with vision mode usage or grenade selection
-	if (PNxCVisionModeMain.state >= 10) || PNxCGrenadeHotkeyMain.selectTrap || PNxCGrenadeHotkeyMain.quickselectTrap
-		set iHUD.pnOn to 1
-		set iHUDFade.secondsToFadePN to iHUDSettings.fadeSeconds
-	endif
+  ;; Inventory weight
+  if ((player.GetAV InventoryWeight)/(player.GetAV CarryWeight)*100 >= fWeight)
+    set iHUD.pnhEncumbOn to 1
+    set iHUDFade.secondsToFadePNHEncumb to iHUDSettings.fadeSeconds
+  endif
 
+  ;; Weapon ammo and health
+  set rWeapon to player.GetEquippedObject 5
+  if rWeapon && (player.IsWeaponInList RepairBinoculars == 0) ; The Binoculars are One-handed Pistols(!), so weed them out
+    set sWeaponType to player.GetWeaponType rWeapon
+    ;; Check current clip load for weapons that have clips and weapon health for all weapons
+    if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
+        set iHUD.hudCNDOn to 1
+        set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSeconds
+      endif
+    endif
+  endif
 
-	;; Weapon ammo and health
-	set rWeapon to player.GetEquippedObject 5
-	if rWeapon && (player.IsWeaponInList RepairBinoculars == 0) ; The Binoculars are One-handed Pistols(!), so weed them out
-		set sWeaponType to player.GetWeaponType rWeapon
-		;; Check current clip load for weapons that have clips and weapon health for all weapons
-		if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
-				set iHUD.hudCNDOn to 1
-				set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSeconds
-			endif
-		endif
-	endif
+  ;; Project Nevada's HUD - activates with vision mode usage or grenade selection
+  if rPNxCVisionModeMain && rPNxCGrenadeHotkeyMain
+    if (rPNxCVisionModeMain.state >= 10) || rPNxCGrenadeHotkeyMain.selectTrap || rPNxCGrenadeHotkeyMain.quickselectTrap
+      set iHUD.pnOn to 1
+      set iHUDFade.secondsToFadePN to iHUDSettings.fadeSeconds
+    endif
+  endif
 
-	;; Hud Extended's Health and Armor Hud
-	;;
-	;; 1. Check all of the health values
-	if (player.GetAV perceptioncondition <= fHealth) || (player.GetAV leftattackcondition <= fHealth) || (player.GetAV endurancecondition <= fHealth) || (player.GetAV rightattackcondition <= fHealth) || (player.GetAV leftmobilitycondition <= fHealth) || (player.GetAV rightmobilitycondition <= fHealth)
-		set HUDEShowHealth to 1
-	else
-		;; All armor and helmet values taken as-is from Imp's HUDEQuestScript
+  ;; Hud Extended's Health and Armor Hud
+  if rHUDEShowHealth
+    set sShowHUDE to 0
+    if (player.GetAV PerceptionCondition <= fHealth) || (player.GetAV LeftAttackCondition <= fHealth) || (player.GetAV EnduranceCondition <= fHealth) || (player.GetAV RightAttackCondition <= fHealth) || (player.GetAV LeftMobilityCondition <= fHealth) || (player.GetAV RightMobilityCondition <= fHealth)
+      set sShowHUDE to 1
+    else
+      foreach aWearable <- aHUDECheckList
+        let iIndex := aWearable["value"]
+        set rEquip to player.player.GetEquippedCurrentHealth iIndex
+        if rEquip
+          set fEquipState to player.GetEquippedCurrentHealth iIndex
+          set fEquipState to fEquipState / (gethealth rArmor) * 100
+          if ((fEquipState == -1) && (aWearable["key"] == 0 || aWearable["key"] == sHUDLastIndex)) || (fEquipState <= fArmor)
+            ;; show if no armor or nothing on head => (fEquipState == -1) && key is first (armor) or last (all head wear)
+            set sShowHUDE to 1
+            break
+          endif
+        endif
+      loop
 
-		;; 2. Check the armor
-		set rArmor to player.getequippedobject 2
-		if rArmor
-			set fCondition to player.getequippedcurrenthealth 2
-			set fCondition to fCondition / (gethealth rArmor) * 100
-		else
-			set fCondition to -1
-		endif
+      set rHUDEShowHealth to sShowHUDE
+    endif
+  endif
 
-
-		if (fCondition <= fArmor) 	; show if no armor => (fCondition == -1)
-			set HUDEShowHealth to 1
-		else
-			;; 3. Check the helmet
-			set rHelmet to player.getequippedobject 0							; head
-			if rHelmet
-				set fCondition to player.getequippedcurrenthealth 0
-				set fCondition to fCondition / (gethealth rHelmet) * 100
-			else
-				set rHelmet to player.getequippedobject 9						; headband
-				if rHelmet
-					set fCondition to player.getequippedcurrenthealth 9
-					set fCondition to fCondition / (gethealth rHelmet) * 100
-				else
-					set rHelmet to player.getequippedobject 10					; hat
-					if rHelmet
-						set fCondition to player.getequippedcurrenthealth 10
-						set fCondition to fCondition / (gethealth rHelmet) * 100
-					else
-						set rHelmet to player.getequippedobject 11				; eyeglasses
-						if rHelmet
-							set fCondition to player.getequippedcurrenthealth 11
-							set fCondition to fCondition / (gethealth rHelmet) * 100
-						else
-							set rHelmet to player.getequippedobject 14			; mask
-							if rHelmet
-								set fCondition to player.getequippedcurrenthealth 14
-								set fCondition to fCondition / (gethealth rHelmet) * 100
-							else
-								set fCondition to -1
-							endif
-						endif
-					endif
-				endif
-			endif
-
-			if (fCondition <= fArmor) 	; show if no helmet => (fCondition == -1)
-				set HUDEShowHealth to 1
-			else
-				set HUDEShowHealth to 0
-			endif
-		endif
-	endif
 End
