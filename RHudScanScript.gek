@@ -12,9 +12,13 @@ short sWeaponType
 short sWeaponNeedsLoading
 
 short iIndex
+short iKey
 ref rHUDEShowHealth
 ref rPNxCVisionModeMain
 ref rPNxCGrenadeHotkeyMain
+short sPNstate
+short sPNselectTrap
+short sPNquickSelectTrap
 
 ref rEquip
 float fEquipState
@@ -26,28 +30,30 @@ short sShowHUDE
 
 Begin GameMode
 
-  if GetGameRestarted
+  if GetGameLoaded || GetGameRestarted
     set iIndex to GetModIndex "HUD Extended.esp"
     if iIndex < 255
-      set rHUDEShowHealth to BuildRef iIndex ?????
+      set rHUDEShowHealth to BuildRef iIndex 8660 ; 0021D4
       ;; All armor and helmet values taken as-is from Imp's HUDEQuestScript
       let aHUDECheckList := ar_list 2, 0, 10, 11, 9, 14  ; armor, head, hat, eyeglasses, headband, mask
       let sHUDLastIndex := (ar_size aHUDECheckList) - 1
+      if eval !(IsReference rHUDEShowHealth)
+        set rHUDEShowHealth to 0
+      endif
     else
       set rHUDEShowHealth to 0
     endif
 
-    set iIndex to GetModIndex ""
+    set iIndex to GetModIndex "Project Nevada - Core.esm"
     if iIndex < 255
-      set rPNxCVisionModeMain to BuildRef iIndex ?????
+      set rPNxCVisionModeMain to BuildRef iIndex 48006 ; 00BB86
+      set rPNxCGrenadeHotkeyMain to BuildRef iIndex 18262 ; 004756
+      if eval !(IsReference rPNxCVisionModeMain)
+        set rPNxCVisionModeMain to 0
+        set rPNxCGrenadeHotkeyMain to 0
+      endif
     else
       set rPNxCVisionModeMain to 0
-    endif
-
-    set iIndex to GetModIndex ""
-    if iIndex < 255
-      set rPNxCGrenadeHotkeyMain to BuildRef iIndex ?????
-    else
       set rPNxCGrenadeHotkeyMain to 0
     endif
 
@@ -82,15 +88,17 @@ Begin GameMode
     set sWeaponType to player.GetWeaponType rWeapon
     ;; Check current clip load for weapons that have clips and weapon health for all weapons
     if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
-        set iHUD.hudCNDOn to 1
-        set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSeconds
-      endif
+      set iHUD.hudCNDOn to 1
+      set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSeconds
     endif
   endif
 
   ;; Project Nevada's HUD - activates with vision mode usage or grenade selection
   if rPNxCVisionModeMain && rPNxCGrenadeHotkeyMain
-    if (rPNxCVisionModeMain.state >= 10) || rPNxCGrenadeHotkeyMain.selectTrap || rPNxCGrenadeHotkeyMain.quickselectTrap
+    let sPNstate := rPNxCVisionModeMain.GetVariable "state"
+    let sPNselectTrap := rPNxCGrenadeHotkeyMain.GetVariable "selectTrap"
+    let sPNquickSelectTrap := rPNxCGrenadeHotkeyMain.GetVariable "quickselectTrap"
+    if (sPNstate >= 10) || sPNselectTrap || sPNquickSelectTrap
       set iHUD.pnOn to 1
       set iHUDFade.secondsToFadePN to iHUDSettings.fadeSeconds
     endif
@@ -104,11 +112,12 @@ Begin GameMode
     else
       foreach aWearable <- aHUDECheckList
         let iIndex := aWearable["value"]
-        set rEquip to player.player.GetEquippedCurrentHealth iIndex
+        set rEquip to player.GetEquippedCurrentHealth iIndex
         if rEquip
           set fEquipState to player.GetEquippedCurrentHealth iIndex
-          set fEquipState to fEquipState / (gethealth rArmor) * 100
-          if ((fEquipState == -1) && (aWearable["key"] == 0 || aWearable["key"] == sHUDLastIndex)) || (fEquipState <= fArmor)
+          set fEquipState to fEquipState / (gethealth rEquip) * 100
+          let iKey := aWearable["key"]
+          if ((fEquipState == -1) && (iKey == 0 || iKey == sHUDLastIndex)) || (fEquipState <= fArmor)
             ;; show if no armor or nothing on head => (fEquipState == -1) && key is first (armor) or last (all head wear)
             set sShowHUDE to 1
             break
