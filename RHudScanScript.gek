@@ -1,0 +1,144 @@
+scn RHudScanScript
+
+;; Thresholds
+float fPrimary  ; primary needs values
+float fHealth   ; limb health
+float fArmor    ; armor health
+float fWeapon   ; weapon health
+float fWeight   ; inventory weight
+
+ref rWeapon
+short sWeaponType
+short sWeaponNeedsLoading
+
+short iIndex
+
+short iPNLoaded
+ref rPNxCVisionModeMain
+ref rPNxCGrenadeHotkeyMain
+short sPNstate
+short sPNselectTrap
+short sPNquickSelectTrap
+
+short iHUDELoaded
+array_var aHUDEHeadWearList
+array_var aWearable
+ref rEquip
+float fEquipState
+short sGoodHeadWEar
+short sShowHUDE
+
+
+Begin GameMode
+
+  if GetGameLoaded || GetGameRestarted
+    set iHUDELoaded to 0
+    set iPNLoaded to 0
+
+    set iIndex to GetModIndex "HUD Extended.esp"
+    if iIndex < 255
+      set iHUDEloaded to 1
+      ;; All head wear values taken as-is from Imp's HUDEQuestScript
+      let aHUDEHeadWearList := ar_list 0, 10, 11, 9, 14  ; head, hat, eyeglasses, headband, mask
+    endif
+
+    set iIndex to GetModIndex "Project Nevada - Core.esm"
+    if iIndex < 255
+      set iPNLoaded to 1
+      set rPNxCVisionModeMain to BuildRef iIndex 48006 ; 00BB86
+      set rPNxCGrenadeHotkeyMain to BuildRef iIndex 18262 ; 004756
+      if eval !(IsReference rPNxCVisionModeMain)
+        set iPNLoaded to 0
+      endif
+      if eval !(IsReference rPNxCGrenadeHotkeyMain)
+        set iPNLoaded to 0
+      endif
+    endif
+  endif
+
+  set fPrimary to RHudHTSThreshold * RHudHTSPercentage/100
+  set fHealth  to RHudLimbPercentage
+  set fArmor   to RHudArmorPercentage
+  set fWeapon  to RHudWeaponPercentage
+  set fWeight  to RHudWeightPercentage
+
+  ;; Primary Needs Hud
+  if (player.GetAV Dehydration >= fPrimary) || (player.GetAV Hunger >= fPrimary) || (player.GetAV SleepDeprevation >= fPrimary)
+    set iHUD.pnhPrimaryOn to 1
+    set iHUDFade.secondsToFadePNHPrimary to iHUDSettings.fadeSeconds
+  endif
+
+  ;; Rads
+  if (player.GetAV RadiationRads >= fPrimary)
+    set iHUD.pnhRadsOn to 1
+    set iHUDFade.secondsToFadePNHRads to iHUDSettings.fadeSeconds
+  endif
+
+  ;; Inventory weight
+  if ((player.GetAV InventoryWeight)/(player.GetAV CarryWeight)*100 >= fWeight)
+    set iHUD.pnhEncumbOn to 1
+    set iHUDFade.secondsToFadePNHEncumb to iHUDSettings.fadeSeconds
+  endif
+
+  ;; Weapon ammo and health
+  set rWeapon to player.GetEquippedObject 5
+  if rWeapon && (player.IsWeaponInList RepairBinoculars == 0) ; The Binoculars are One-handed Pistols(!), so weed them out
+    set sWeaponType to player.GetWeaponType rWeapon
+    ;; Check current clip load for weapons that have clips and weapon health for all weapons
+    if ((sWeaponType >= 3 && sWeaponType <= 9) && (GetClipSize rWeapon > GetPlayerCurrentAmmoRounds)) || (player.GetWeaponHealthPerc <= fWeapon)
+      set iHUD.hudCNDOn to 1
+      set iHUDFade.secondsToFadeCND to iHUDSettings.fadeSeconds
+    endif
+  endif
+
+  ;; Project Nevada's HUD - activates with vision mode usage or grenade selection
+  if iPNLoaded
+    let sPNstate := rPNxCVisionModeMain.GetVariable "state"
+    let sPNselectTrap := rPNxCGrenadeHotkeyMain.GetVariable "selectTrap"
+    let sPNquickSelectTrap := rPNxCGrenadeHotkeyMain.GetVariable "quickselectTrap"
+    if (sPNstate >= 10) || sPNselectTrap || sPNquickSelectTrap
+      set iHUD.pnOn to 1
+      set iHUDFade.secondsToFadePN to iHUDSettings.fadeSeconds
+    endif
+  endif
+
+  ;; Hud Extended's Health and Armor Hud
+  if iHUDELoaded
+    set sShowHUDE to 0
+    if (player.GetAV PerceptionCondition <= fHealth) || (player.GetAV LeftAttackCondition <= fHealth) || (player.GetAV EnduranceCondition <= fHealth) || (player.GetAV RightAttackCondition <= fHealth) || (player.GetAV LeftMobilityCondition <= fHealth) || (player.GetAV RightMobilityCondition <= fHealth)
+      set sShowHUDE to 1
+    else
+      ;; Armor == 2
+      set rEquip to player.GetEquippedObject 2
+      if rEquip
+        set fEquipState to (player.GetEquippedCurrentHealth 2) / (GetBaseHealth rEquip) * 100
+      endif
+      if (rEquip == 0) || (fEquipState <= fArmor)
+        set sShowHudE to 1
+      else
+        ;; Head wear - loop over all slots
+        set sGoodHeadWEar to 0
+        foreach aWearable <- aHUDEHeadWearList
+          let iIndex := aWearable["value"]
+          set rEquip to player.GetEquippedObject iIndex
+          if rEquip
+            set fEquipState to (player.GetEquippedCurrentHealth iIndex) / (GetBaseHealth rEquip) * 100
+            if fEquipState <= fArmor
+              set sShowHUDE to 1
+              break
+            endif
+            let sGoodHeadWEar := sGoodHeadWEar + 1
+          endif
+        loop
+        ;; Need at least one head wear equipped
+        if sGoodHeadWEar == 0
+          set sShowHUDE to 1
+        endif
+      endif
+
+      ;; SetGlobalValue is from Lutana's NVSE plugin
+      SetGlobalValue "HUDEShowHealth" sShowHUDE
+    endif
+  endif
+
+End
